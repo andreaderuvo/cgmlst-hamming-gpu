@@ -1,4 +1,4 @@
-// GPU side of tc-hamming: exact cgMLST Hamming on 1-bit tensor cores.
+// GPU side of cgmlst-hamming-gpu: exact cgMLST Hamming on 1-bit tensor cores.
 //
 //   H = P Pᵀ − O Oᵀ − R
 //   P: n × L presence bits, O: n × D one-hot bits of frequent alleles (both

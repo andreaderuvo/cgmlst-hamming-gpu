@@ -1,5 +1,5 @@
 [package]
-name = "tc-hamming"
+name = "cgmlst-hamming-gpu"
 version = "0.1.0"
 edition = "2021"
 description = "Exact cgMLST Hamming distance matrix on 1-bit tensor cores (frequent-allele one-hot AND+popcount GEMM + exact sparse rare-pair correction)"
@@ -7,7 +7,7 @@ license = "GPL-3.0-only"
 authors = ["Andrea de Ruvo"]
 
 [[bin]]
-name = "tc-hamming"
+name = "cgmlst-hamming-gpu"
 path = "src/main.rs"
 
 [dependencies]

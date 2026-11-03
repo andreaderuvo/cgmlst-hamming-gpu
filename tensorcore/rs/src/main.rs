@@ -1,4 +1,4 @@
-//! tc-hamming — exact pairwise cgMLST Hamming distance matrix on 1-bit tensor
+//! cgmlst-hamming-gpu — exact pairwise cgMLST Hamming distance matrix on 1-bit tensor
 //! cores. Distance = number of loci where both alleles are called and differ
 //! (`INF-` stripped; missing char, empty and non-numeric calls = missing).
 //!
@@ -17,7 +17,7 @@ use clap::Parser;
 use rayon::prelude::*;
 
 #[derive(Parser, Debug)]
-#[command(name = "tc-hamming", version, about = "Exact cgMLST Hamming distance matrix on 1-bit tensor cores")]
+#[command(name = "cgmlst-hamming-gpu", version, about = "Exact cgMLST Hamming distance matrix on 1-bit tensor cores")]
 struct Args {
     /// Input allele-call TSV (chewBBACA format). Use '-' for stdin
     #[arg(short = 'i', long)]
@@ -38,7 +38,7 @@ struct Args {
     #[arg(short = 'D', long, default_value = "\t")]
     output_sep: String,
     /// Name for the top-left index cell
-    #[arg(short = 'x', long, default_value = "tc-hamming")]
+    #[arg(short = 'x', long, default_value = "cgmlst-hamming-gpu")]
     index_name: String,
     /// Character used for missing data
     #[arg(short = 'n', long, default_value = "-")]

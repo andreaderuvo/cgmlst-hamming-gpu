@@ -43,7 +43,7 @@ torch.cuda.synchronize(); T_gpu = time.time() - T1
 T2 = time.time()
 Dn = D.numpy()
 with open(out, "w") as f:
-    f.write("tc-hamming\t" + "\t".join(names) + "\n")
+    f.write("cgmlst-hamming-gpu\t" + "\t".join(names) + "\n")
     for nm, row in zip(names, Dn):
         f.write(nm + "\t" + "\t".join(map(str, row.tolist())) + "\n")
 T_write = time.time() - T2

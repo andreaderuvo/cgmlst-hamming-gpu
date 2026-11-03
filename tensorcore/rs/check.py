@@ -1,17 +1,17 @@
 #!/usr/bin/env python3
-"""Exactness check of tc-hamming against a brute-force numpy reference.
+"""Exactness check of cgmlst-hamming-gpu against a brute-force numpy reference.
 
 Builds allele-call TSVs with the awkward cases (missing '-', empty cells,
 `INF-` prefixes, non-numeric calls, 32-bit hashed ids, very frequent and
-singleton alleles), runs tc-hamming with several τ / stripe / layout options
+singleton alleles), runs cgmlst-hamming-gpu with several τ / stripe / layout options
 and compares every cell with a direct pairwise count.
 
-    python3 check.py [path/to/tc-hamming]
+    python3 check.py [path/to/cgmlst-hamming-gpu]
 """
 import os, subprocess, sys, tempfile
 import numpy as np
 
-TC = sys.argv[1] if len(sys.argv) > 1 else os.path.join(os.path.dirname(os.path.abspath(__file__)), "target/release/tc-hamming")
+TC = sys.argv[1] if len(sys.argv) > 1 else os.path.join(os.path.dirname(os.path.abspath(__file__)), "target/release/cgmlst-hamming-gpu")
 
 
 def make(n, L, seed, hashed):
@@ -47,7 +47,7 @@ def ref(A):
 def run(path, args):
     out = subprocess.run([TC, "-s", "-i", path, *args], capture_output=True, text=True)
     if out.returncode:
-        raise SystemExit(f"tc-hamming {args} failed: {out.stderr}")
+        raise SystemExit(f"cgmlst-hamming-gpu {args} failed: {out.stderr}")
     lines = out.stdout.rstrip("\n").split("\n")
     sep = "," if "-D" in args else "\t"
     return np.array([[int(x) for x in l.split(sep)[1:]] for l in lines[1:]])

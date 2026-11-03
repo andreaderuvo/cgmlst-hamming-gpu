@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>tc-hamming — exact cgMLST distances on 1-bit tensor cores</title>
+<title>cgmlst-hamming-gpu — exact cgMLST distances on 1-bit tensor cores</title>
 <meta name="description" content="Exact pairwise cgMLST Hamming distance matrices on the GPU's 1-bit tensor cores: 63k profiles in 5.6 s end to end.">
 <style>
 :root{
@@ -54,7 +54,7 @@ footer{margin-top:4rem;font:.85rem ui-sans-serif,system-ui,sans-serif;color:var(
 </head>
 <body>
 <main>
-<nav class="top sans"><span>tc-hamming</span><a class="gh" href="https://github.com/andreaderuvo/tc-hamming"><svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true"><path fill="currentColor" d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>View on GitHub</a></nav>
+<nav class="top sans"><span>cgmlst-hamming-gpu</span><a class="gh" href="https://github.com/andreaderuvo/cgmlst-hamming-gpu"><svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true"><path fill="currentColor" d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>View on GitHub</a></nav>
 <h1>Exact cgMLST distances on 1-bit tensor cores</h1>
 <p class="lede">The full pairwise Hamming matrix between allelic profiles, computed with the
 AND&#8202;+&#8202;popcount units built for binarized neural networks. No training, no approximation.</p>
@@ -141,16 +141,16 @@ rare alleles fit easily; a synthetic 50 000 × 5 000 set with 50 frequent allele
 24 GB card.</p>
 
 <h2>Use it</h2>
-<pre><code>git clone https://github.com/andreaderuvo/tc-hamming &amp;&amp; cd tc-hamming
+<pre><code>git clone https://github.com/andreaderuvo/cgmlst-hamming-gpu &amp;&amp; cd cgmlst-hamming-gpu
 git clone --depth 1 https://github.com/NVIDIA/cutlass.git tensorcore/third_party/cutlass
 cd tensorcore/rs &amp;&amp; cargo build --release
-./target/release/tc-hamming -i calls.tsv -o dists.tsv
+./target/release/cgmlst-hamming-gpu -i calls.tsv -o dists.tsv
 python3 check.py        # exactness check</code></pre>
 <p>Needs an NVIDIA GPU with tensor cores (sm_80 or newer; developed on sm_89), the CUDA toolkit
 and Rust. Input is an allele-call TSV (chewBBACA style). Options cover matrix layout
 (full / lower / upper), separators, missing character, locus and sample completeness filters,
 a distance cap and gzip output — see the
-<a href="https://github.com/andreaderuvo/tc-hamming#usage">README</a>.</p>
+<a href="https://github.com/andreaderuvo/cgmlst-hamming-gpu#usage">README</a>.</p>
 
 <h2>What is and isn't new</h2>
 <p>The pieces are known. One-hot × one-hot = match count is textbook. The frequent/rare split is
@@ -161,9 +161,9 @@ The contribution here is the combination: exact multi-allelic Hamming with missi
 1-bit tensor cores, with the split as the cost knob.</p>
 <p>It started as an attempt to write the distance as a hand-wired ReLU network. That works and is
 exact, but costs ≈ 11 operations per locus pair against 3 for a plain comparison, so it was
-dropped. Notes in <a href="https://github.com/andreaderuvo/tc-hamming/blob/main/RELU.md">RELU.md</a>.</p>
+dropped. Notes in <a href="https://github.com/andreaderuvo/cgmlst-hamming-gpu/blob/main/RELU.md">RELU.md</a>.</p>
 
-<footer>Andrea de Ruvo · source code: <a href="https://github.com/andreaderuvo/tc-hamming">github.com/andreaderuvo/tc-hamming</a> · GPL-3.0</footer>
+<footer>Andrea de Ruvo · source code: <a href="https://github.com/andreaderuvo/cgmlst-hamming-gpu">github.com/andreaderuvo/cgmlst-hamming-gpu</a> · GPL-3.0</footer>
 </main>
 </body>
 </html>

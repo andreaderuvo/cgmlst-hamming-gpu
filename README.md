@@ -1,6 +1,6 @@
-# tc-hamming — exact cgMLST Hamming distances on 1-bit tensor cores
+# cgmlst-hamming-gpu — exact cgMLST Hamming distances on 1-bit tensor cores
 
-`tc-hamming` computes the full pairwise **Hamming distance matrix between
+`cgmlst-hamming-gpu` computes the full pairwise **Hamming distance matrix between
 cgMLST allelic profiles** — for every pair of isolates, the number of loci where
 both alleles are called and differ — on the GPU's **1-bit tensor cores**, the
 AND+popcount units built for binarized neural networks. No training, no
@@ -10,7 +10,7 @@ On 63 005 *Campylobacter* profiles × 1 142 loci (≈ 2 billion pairs) the whole
 run, TSV in → full TSV matrix out, takes **5.6 s** on an NVIDIA L4, of which
 **0.7 s** is the distance computation.
 
-Project page: <https://andreaderuvo.github.io/tc-hamming/>
+Project page: <https://andreaderuvo.github.io/cgmlst-hamming-gpu/>
 
 ## How it works
 
@@ -66,11 +66,11 @@ Requirements: NVIDIA GPU with tensor cores (sm_80+; developed on sm_89), CUDA
 toolkit, Rust, and CUTLASS headers.
 
 ```bash
-git clone https://github.com/andreaderuvo/tc-hamming && cd tc-hamming
+git clone https://github.com/andreaderuvo/cgmlst-hamming-gpu && cd cgmlst-hamming-gpu
 git clone --depth 1 https://github.com/NVIDIA/cutlass.git tensorcore/third_party/cutlass
 cd tensorcore/rs
 cargo build --release            # CUDA_ARCH=sm_80 / CUTLASS_DIR=... to override
-./target/release/tc-hamming -i calls.tsv -o dists.tsv
+./target/release/cgmlst-hamming-gpu -i calls.tsv -o dists.tsv
 python3 check.py                 # exactness check
 ```
 
@@ -140,7 +140,7 @@ references: [`tensorcore/README.md`](tensorcore/README.md).
 
 | path | what |
 |---|---|
-| `tensorcore/rs/` | **tc-hamming**: Rust host (parsing, filters, encoding, auto-τ, parallel writer) + CUDA/CUTLASS kernel (`cuda/tch.cu`) via FFI |
+| `tensorcore/rs/` | **cgmlst-hamming-gpu**: Rust host (parsing, filters, encoding, auto-τ, parallel writer) + CUDA/CUTLASS kernel (`cuda/tch.cu`) via FFI |
 | `tensorcore/` | C++ prototype (`tc_hamming.cu`), tensor-core peak benchmark, allele-frequency cost model, notes |
 | `cuda/`, `python/`, [`RELU.md`](RELU.md) | where it started: Hamming as a hand-wired ReLU network (exact, but 2.3× slower than a plain compare — abandoned) |
 | `docs/` | project page |

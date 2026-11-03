@@ -37,7 +37,7 @@ python3 to_ranks.py calls.tsv calls.ranks
 
 ## The tool
 
-`rs/` is the usable tool (tc-hamming): Rust host (parsing, filters, encoding,
+`rs/` is the usable tool (cgmlst-hamming-gpu): Rust host (parsing, filters, encoding,
 auto-τ, parallel TSV/gzip writer) + the CUDA/CUTLASS kernel via FFI. See the
 top-level README for usage and end-to-end timings; `rs/check.py` checks it
 cell by cell against a brute-force reference.

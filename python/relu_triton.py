@@ -49,7 +49,7 @@ if __name__ == "__main__":
     t = time.time(); D = run(X, **cfg); torch.cuda.synchronize(); tg = time.time() - t
     t = time.time(); Dn = D.cpu().numpy()
     with open(out, "w") as f:
-        f.write("tc-hamming\t" + "\t".join(names) + "\n")
+        f.write("cgmlst-hamming-gpu\t" + "\t".join(names) + "\n")
         for nm, row in zip(names, Dn): f.write(nm + "\t" + "\t".join(map(str, row.tolist())) + "\n")
     tw = time.time() - t
     n, L = codes.shape
