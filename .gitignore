@@ -1,0 +1,12 @@
+bench
+data/
+__pycache__/
+*.npy
+third_party/
+tensorcore/tc_1*
+tensorcore/tc_2*
+tensorcore/peak
+tensorcore/bench_file
+tensorcore/bench_noop
+tensorcore/rs/target/
+tensorcore/tc_hamming

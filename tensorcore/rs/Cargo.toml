@@ -1,0 +1,23 @@
+[package]
+name = "tc-hamming"
+version = "0.1.0"
+edition = "2021"
+description = "Exact cgMLST Hamming distance matrix on 1-bit tensor cores (frequent-allele one-hot AND+popcount GEMM + exact sparse rare-pair correction)"
+license = "GPL-3.0-only"
+authors = ["Andrea de Ruvo"]
+
+[[bin]]
+name = "tc-hamming"
+path = "src/main.rs"
+
+[dependencies]
+rayon = "1"
+clap = { version = "4", features = ["derive"] }
+itoa = "1"
+gzp = "0.11"
+
+[profile.release]
+opt-level = 3
+lto = true
+codegen-units = 1
+panic = "abort"

@@ -1,0 +1,166 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>tc-hamming — exact cgMLST distances on 1-bit tensor cores</title>
+<meta name="description" content="Exact pairwise cgMLST Hamming distance matrices on the GPU's 1-bit tensor cores: 63k profiles in 5.6 s end to end.">
+<style>
+:root{
+  --bg:#fbfaf7; --fg:#1d1d1b; --muted:#6a6a64; --line:#e3e0d8; --card:#ffffff;
+  --accent:#2f6b4f; --accent2:#b5562b; --code:#f2efe8;
+  color-scheme:light;
+}
+@media (prefers-color-scheme:dark){
+  :root{--bg:#141513; --fg:#e8e6df; --muted:#9b9a92; --line:#2d2e2a; --card:#1b1c1a;
+        --accent:#6cc59a; --accent2:#e98a5c; --code:#22231f; color-scheme:dark}
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--fg);
+  font:17px/1.6 "Iowan Old Style","Palatino Linotype",Palatino,Georgia,serif}
+main{max-width:46rem;margin:0 auto;padding:3.5rem 1.25rem 5rem}
+h1,h2,h3,.sans{font-family:ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+h1{font-size:clamp(2rem,6vw,2.9rem);line-height:1.1;margin:0 0 .6rem;letter-spacing:-.02em}
+h2{font-size:1.25rem;margin:3rem 0 .8rem;padding-top:1.2rem;border-top:1px solid var(--line)}
+h3{font-size:1rem;margin:1.6rem 0 .4rem}
+.lede{font-size:1.2rem;color:var(--muted);margin:0 0 2rem}
+a{color:var(--accent)}
+code,pre{font-family:ui-monospace,"SF Mono",Menlo,Consolas,monospace;font-size:.86em}
+code{background:var(--code);padding:.1em .35em;border-radius:4px}
+pre{background:var(--code);padding:1rem 1.1rem;border-radius:8px;overflow-x:auto;line-height:1.5}
+pre code{background:none;padding:0}
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(10rem,1fr));gap:.8rem;margin:2rem 0}
+.stat{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:1rem 1.1rem}
+.stat b{display:block;font:700 1.9rem/1.1 ui-sans-serif,system-ui,sans-serif;color:var(--accent)}
+.stat span{font:.85rem/1.35 ui-sans-serif,system-ui,sans-serif;color:var(--muted)}
+.eq{font-size:1.05rem}
+.bars{margin:1rem 0 .4rem;font:.9rem/1.3 ui-sans-serif,system-ui,sans-serif}
+.bar{display:grid;grid-template-columns:9.5rem 1fr 4.2rem;gap:.6rem;align-items:center;margin:.45rem 0}
+.bar i{display:block;height:1.1rem;border-radius:3px;background:var(--accent2)}
+.bar.tc i{background:var(--accent)}
+.bar em{font-style:normal;text-align:right;font-variant-numeric:tabular-nums}
+.caption{font:.85rem/1.4 ui-sans-serif,system-ui,sans-serif;color:var(--muted)}
+.tw{overflow-x:auto}
+table{border-collapse:collapse;width:100%;font:.92rem/1.4 ui-sans-serif,system-ui,sans-serif;margin:.8rem 0}
+th,td{padding:.45rem .6rem;border-bottom:1px solid var(--line);text-align:left}
+td.n,th.n{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+ol li,ul li{margin:.35rem 0}
+footer{margin-top:4rem;font:.85rem ui-sans-serif,system-ui,sans-serif;color:var(--muted)}
+@media (max-width:30rem){.bar{grid-template-columns:6.5rem 1fr 3.6rem}}
+</style>
+</head>
+<body>
+<main>
+<p class="sans" style="color:var(--muted);margin:0 0 .4rem;font-size:.9rem">tc-hamming</p>
+<h1>Exact cgMLST distances on 1-bit tensor cores</h1>
+<p class="lede">The full pairwise Hamming matrix between allelic profiles, computed with the
+AND&#8202;+&#8202;popcount units built for binarized neural networks. No training, no approximation.</p>
+
+<div class="stats">
+  <div class="stat"><b>5.6 s</b><span>63 005 profiles, TSV in → full matrix out</span></div>
+  <div class="stat"><b>0.7 s</b><span>of which distance computation (≈ 2·10⁹ pairs)</span></div>
+  <div class="stat"><b>exact</b><span>integer arithmetic, any τ; checked cell by cell</span></div>
+</div>
+
+<h2>The problem</h2>
+<p>In cgMLST each isolate is a profile of allele numbers, one per locus (≈ 1 000–5 000 loci).
+The distance between two isolates is the number of loci where both alleles are called and
+differ; missing calls are ignored. This matrix underlies outbreak clustering, minimum spanning
+trees and nearest-neighbour searches. Its cost grows with the square of the number of isolates,
+so for whole databases (tens to hundreds of thousands of profiles) it becomes the slow step.</p>
+
+<h2>The idea</h2>
+<p>Per locus, with 0 = missing:</p>
+<pre class="eq"><code>[a≠0][b≠0][a≠b]  =  [a≠0][b≠0]  −  [a=b≠0]</code></pre>
+<p>Summed over loci, the distance matrix is a difference of two counts:</p>
+<pre class="eq"><code>H = C − E
+C = loci called in both           = P·Pᵀ      P: presence bits
+E = loci called in both and equal = O·Oᵀ + R  O: one-hot bits of alleles seen ≥ τ times
+                                              R: equal pairs of rarer alleles</code></pre>
+<p>Both <code>P·Pᵀ</code> and <code>O·Oᵀ</code> are products of <em>binary</em> matrices — exactly what 1-bit
+tensor cores compute, with int32 accumulation. The second product subtracts itself from the first
+in its epilogue.</p>
+<p>Equality between many categories needs a one-hot expansion, and real data have a long tail of
+rare alleles that would make it huge. So only alleles seen at least τ times enter the one-hot;
+equal pairs among the rare ones are few, are enumerated exactly and subtracted on the GPU.
+τ only moves work between the two terms and is chosen automatically from a cost model under the
+free VRAM.</p>
+<p>Only the upper triangle is computed, in row stripes on two CUDA streams: while the host formats
+one stripe, the next one is computed and copied back.</p>
+
+<h2>Why it is always exact</h2>
+<ol>
+  <li>The identity above holds for every pair of integers.</li>
+  <li>For one locus, <code>Σ<sub>v</sub> [a=v][b=v] = [a=b]</code>; frequent and rare alleles
+      partition the alleles, so <code>O·Oᵀ + R</code> counts every equal called pair exactly once,
+      whatever τ is.</li>
+  <li>Everything is integer: bits, popcounts, int32 accumulators, u16 distances (≤ number of
+      loci); zero padding adds nothing.</li>
+  <li>Allele ids are renumbered per locus by an injective map that keeps 0 = missing, so hashed
+      32/64-bit ids work unchanged.</li>
+</ol>
+<p>The repository ships a check that compares every cell with a brute-force count on inputs with
+missing, empty, <code>INF-</code>, non-numeric and hashed calls, across τ, stripe sizes and
+output layouts.</p>
+
+<h2>Results</h2>
+<p>NVIDIA L4 shared with other jobs (≈ 1.3–1.8 GB of VRAM free), 80-core CPU.
+<em>Campylobacter</em>, 63 005 real profiles × 1 142 loci.</p>
+
+<h3>End to end</h3>
+<div class="tw"><table>
+<tr><th>step</th><th class="n">time</th></tr>
+<tr><td>parse TSV</td><td class="n">0.35 s</td></tr>
+<tr><td>encode (ranks, one-hot, rare pairs)</td><td class="n">0.33 s</td></tr>
+<tr><td>tensor-core distances + copy back</td><td class="n">0.7 s</td></tr>
+<tr><td>write the 63k × 63k TSV (≈ 8 GB)</td><td class="n">3.9 s</td></tr>
+<tr><th>total</th><th class="n">5.6 s</th></tr>
+</table></div>
+<p class="caption">Writing text is now the bottleneck.</p>
+
+<h3>Tensor cores vs comparing alleles on the same GPU</h3>
+<p>Against a tiled CUDA kernel that compares alleles locus by locus (GPU compute + copy back):</p>
+<div class="bars" role="img" aria-label="Campylobacter 63k: direct compare 1.79 s, tensor cores 0.365 s. Synthetic 30k by 5000: 1.74 s vs 0.202 s.">
+  <div class="caption">Campylobacter 63 005 × 1 142</div>
+  <div class="bar"><span>direct compare</span><i style="width:100%"></i><em>1.79 s</em></div>
+  <div class="bar tc"><span>tensor cores</span><i style="width:20.4%"></i><em>0.365 s</em></div>
+  <div class="caption" style="margin-top:.9rem">synthetic 30 000 × 5 000</div>
+  <div class="bar"><span>direct compare</span><i style="width:97.2%"></i><em>1.74 s</em></div>
+  <div class="bar tc"><span>tensor cores</span><i style="width:11.3%"></i><em>0.202 s</em></div>
+</div>
+<p class="caption">Same output in both cases. Measured peaks on this L4: int8 GEMM 200 TOPS, 1-bit
+AND+popcount 1 924 TOPS.</p>
+
+<h3>Limit</h3>
+<p>The frequent-allele one-hot must fit in VRAM (no K-tiling yet). Real data with a long tail of
+rare alleles fit easily; a synthetic 50 000 × 5 000 set with 50 frequent alleles per locus
+(221 k one-hot columns ≈ 1.4 GB) does not fit on the shared GPU, though it would on a free
+24 GB card.</p>
+
+<h2>Use it</h2>
+<pre><code>git clone https://github.com/andreaderuvo/tc-hamming &amp;&amp; cd tc-hamming
+git clone --depth 1 https://github.com/NVIDIA/cutlass.git tensorcore/third_party/cutlass
+cd tensorcore/rs &amp;&amp; cargo build --release
+./target/release/tc-hamming -i calls.tsv -o dists.tsv
+python3 check.py        # exactness check</code></pre>
+<p>Needs an NVIDIA GPU with tensor cores (sm_80 or newer; developed on sm_89), the CUDA toolkit
+and Rust. Input is an allele-call TSV (chewBBACA style). Options cover matrix layout
+(full / lower / upper), separators, missing character, locus and sample completeness filters,
+a distance cap and gzip output — see the
+<a href="https://github.com/andreaderuvo/tc-hamming#usage">README</a>.</p>
+
+<h2>What is and isn't new</h2>
+<p>The pieces are known. One-hot × one-hot = match count is textbook. The frequent/rare split is
+the heavy/light technique for join-project queries (Amossen &amp; Pagh, ICDT 2009; Deep, Hu &amp;
+Koutris, SIGMOD 2020). Binary tensor cores have been used in genomics for epistasis on biallelic
+SNPs (Nobre et al.), and XOR+popcount Hamming on bit-packed genotypes is classic (PLINK 1.9).
+The contribution here is the combination: exact multi-allelic Hamming with missing data on
+1-bit tensor cores, with the split as the cost knob.</p>
+<p>It started as an attempt to write the distance as a hand-wired ReLU network. That works and is
+exact, but costs ≈ 11 operations per locus pair against 3 for a plain comparison, so it was
+dropped. Notes in <a href="https://github.com/andreaderuvo/tc-hamming/blob/main/RELU.md">RELU.md</a>.</p>
+
+<footer>Andrea de Ruvo · <a href="https://github.com/andreaderuvo/tc-hamming">github.com/andreaderuvo/tc-hamming</a> · GPL-3.0</footer>
+</main>
+</body>
+</html>
