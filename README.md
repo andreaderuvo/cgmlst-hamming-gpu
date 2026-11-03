@@ -1,4 +1,7 @@
-# cgmlst-hamming-gpu — exact cgMLST Hamming distances on 1-bit tensor cores
+# cgmlst-hamming-gpu
+
+**Exact cgMLST allelic (Hamming) distance matrices for bacterial genomic
+epidemiology, computed on the GPU's 1-bit tensor cores.**
 
 `cgmlst-hamming-gpu` computes the full pairwise **Hamming distance matrix between
 cgMLST allelic profiles** — for every pair of isolates, the number of loci where
